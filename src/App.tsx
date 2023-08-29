@@ -1,13 +1,15 @@
 import { useState, useEffect } from "react";
-import { AiOutlineArrowLeft } from "react-icons/ai";
 import { motion } from "framer-motion";
-import Line from "@/components/Line";
+import { Line, BackButton } from "@/components";
+import Utils from "@/Utils";
 
 const sounds = {
   caseOpening: new Audio(
     (await import("@/assets/sounds/case-opening.mp3")).default
   ),
 };
+
+const spinDuration = 5.5;
 
 const items = [
   {
@@ -52,37 +54,13 @@ const items = [
   },
 ];
 
-const shuffleArray = (array: any[]) => {
-  const newArray = [...array];
-  for (let i = newArray.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * i);
-    const temp = newArray[i];
-    newArray[i] = newArray[j];
-    newArray[j] = temp;
-  }
-  return newArray;
-};
-
-const generateRandomItems = (count: number) => {
-  const shuffledItems = shuffleArray(items);
-
-  const generatedItems = [];
-  for (let i = 0; i < count; i++) {
-    generatedItems.push(
-      shuffledItems[Math.floor(Math.random() * shuffledItems.length)]
-    );
-  }
-
-  return generatedItems;
-};
-
 const components = {
   cases: {
     green: (await import("@/assets/components/cases/green-case.png")).default,
     white: (await import("@/assets/components/cases/red-case.png")).default,
   },
 
-  generatedItems: generateRandomItems(100),
+  generatedItems: Utils.GenerateRandomItems(items, 100),
 
   // box
   blackBox: (await import("@/assets/components/black-box.png")).default,
@@ -121,10 +99,19 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (spinStatus === "awaitToStart") {
-      setSpinWin(3);
-      setSpinStatus("started");
-      sounds.caseOpening.play();
+    switch (spinStatus) {
+      case "awaitToStart":
+        setSpinWin(3);
+        setSpinStatus("started");
+        sounds.caseOpening.play();
+
+        setTimeout(() => {
+          setSpinStatus("finished");
+        }, (spinDuration + 0.5) * 1000);
+
+        break;
+      case "finished":
+        break;
     }
   }, [spinStatus]);
 
@@ -179,17 +166,7 @@ export default function App() {
           {page === "selectedCase" && (
             <>
               <Line />
-              <div className="flex justify-start">
-                <button
-                  className="flex justify-center items-center bg-gray-600 p-2 rounded drop-shadow-[0_0_0.2rem_gray] hover:drop-shadow-[0_0_0.4rem_gray]"
-                  onClick={() => {
-                    setPage("selectCase");
-                  }}
-                >
-                  <AiOutlineArrowLeft />
-                  <div className="font-inter">GO BACK</div>
-                </button>
-              </div>
+              <BackButton onClick={() => setPage("selectCase")} />
 
               <div className="flex justify-center">
                 <motion.img
@@ -205,13 +182,13 @@ export default function App() {
 
                 <div className="ml-32">
                   <button
-                    className="bg-gray-700 p-2 pl-5 pr-5 h-10 rounded drop-shadow-[0_0_0.2rem_gray] hover:drop-shadow-[0_0_0.4rem_gray]"
+                    className="bg-gray-700 w-32 h-10 rounded font-inter text-[1rem] drop-shadow-[0_0_0.2rem_gray] hover:drop-shadow-[0_0_0.4rem_gray]"
                     onClick={() => {
                       setPage("openCase");
                       setSpinStatus("awaitToStart");
                     }}
                   >
-                    <div className="font-inter">OPEN CASE</div>
+                    OPEN CASE
                   </button>
                 </div>
               </div>
@@ -219,15 +196,20 @@ export default function App() {
           )}
 
           {page === "openCase" && (
-            <div className="flex flex-col justify-center items-center">
+            <>
               <Line />
-
-              <img
-                src={components.arrowDown}
-                className="flex justify-center items-center w-[3vw]"
+              <BackButton
+                onClick={() => {
+                  if (spinStatus === "started") return;
+                  setPage("selectedCase");
+                }}
               />
 
-              {spinStatus === "started" && (
+              <div className="flex flex-col justify-center items-center">
+                <img
+                  src={components.arrowDown}
+                  className="flex justify-center items-center w-[3vw]"
+                />
                 <div className="flex flex-row justify-left items-center overflow-x-hidden max-w-1">
                   <motion.div
                     className="flex flex-row"
@@ -236,7 +218,7 @@ export default function App() {
                       x: `${-10 * spinWinIndex - -10 * 3}vw`,
                     }}
                     transition={{
-                      duration: 5.5,
+                      duration: spinDuration,
                     }}
                   >
                     {components.generatedItems.map(({ image }, index) => (
@@ -248,8 +230,33 @@ export default function App() {
                     ))}
                   </motion.div>
                 </div>
+              </div>
+
+              {spinStatus === "finished" && (
+                <div className="absolute top-0 left-0 h-[100vh] w-full bg-[#000000dd] z-10">
+                  <div className="flex flex-col justify-center items-center w-[230] gap-5 h-screen">
+                    <div className="text-[#6aff6a] font-inter text-[27px] drop-shadow-[0.2rem_0.2rem_0.9rem_green]">
+                      CONGRATULATIONS
+                    </div>
+                    <div className="font-inter text-[17px]">
+                      You won something cool
+                    </div>
+                    <img
+                      src={components.generatedItems[spinWinIndex].image}
+                      className="w-[25vh] h-[17vh] border-2 border-l-red-600 border-r-red-600 border-b-red-600 border-t-transparent shadow-[0_0_0.9rem_red] bg-gradient-to-b from-transparent to-red-600/25"
+                    />
+                    <button
+                      className="bg-green-600 p-2 pl-5 pr-5 rounded font-inter hover:shadow-[0_0_0.9rem_green]"
+                      onClick={() => {
+                        setSpinStatus("none");
+                      }}
+                    >
+                      COLLECT
+                    </button>
+                  </div>
+                </div>
               )}
-            </div>
+            </>
           )}
 
           {(page === "selectedCase" || page === "openCase") && (

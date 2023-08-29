@@ -9,7 +9,7 @@ interface LineProps {
   }>;
 }
 
-export default function (props: LineProps) {
+export function Line(props: LineProps) {
   return (
     <div className="flex justify-center items-center relative">
       <img src={LineImage} alt="Line" className="h-10 w-screen" />
@@ -31,7 +31,7 @@ export default function (props: LineProps) {
         >
           <img src={imageInfo.image} alt={"Image"} className="h-10" />
           {imageInfo.text && (
-            <div className="absolute text-white text-[13px] flex font-inter font-bold top-2 left-3">
+            <div className="absolute text-white text-[13px] flex font-inter font-bold top-2 left-3 z-0">
               {imageInfo.text}
             </div>
           )}
